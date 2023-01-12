@@ -300,9 +300,51 @@ class Multiscale_PHATE(object):
         """
         return visualize.map_clusters_to_tree(self.NxTs[cluster_level], self.NxTs)
     
+    # def get_expression(self, expression, visualization_level, coarse_cluster_level=None,
+    #                    coarse_cluster= None, smooth=True, smooth_knn=5):
+    #     """Map expression from single cell space to Multiscale PHATE embedding
+    #     ----------
+    #     expression: array, shape=[n_cells]
+    #         Expression vector that you want to map to coarse granularity
+    #     layer: int
+    #         Coarse granularity
+    #     smooth: bool
+    #         Whether to use smoothing on coarse granularity as developed in
+    #         MAGIC (van dijk et al. 2018)
+    #     smooth_knn: int
+    #         Nearest neighbor bandwidth of smoothing parameter if smooth is True
+        
+    #     Returns
+    #     -------
+    #     expression : array, shape=[n_points_aggregated]
+    #         Denoised expression vector mapped to coarse granularity
+    #     """
+    #     clust_unique = np.unique(np.array(self.NxTs[visualization_level]))
+    #     loc = []
+    #     for c in clust_unique:
+    #         loc.append(np.where(np.array(self.NxTs[visualization_level]) == c)[0])
+
+    #     exp = []
+    #     for l in loc:
+    #         exp.append(np.mean(expression[l]))
+            
+    #     exp = np.array(exp)
+        
+    #     if smooth:
+    #         G = graphtools.Graph(self.Xs[visualization_level], knn = smooth_knn,n_jobs=self.n_jobs)
+    #         exp = G.P.toarray()@exp
+    #     if coarse_cluster!=None and coarse_cluster_level!=None:
+    #         unique = np.unique(
+    #         self.NxTs[visualization_level], return_index=True, return_counts=True
+    #             )
+    #         extract = self.NxTs[coarse_cluster_level][unique[1]] == coarse_cluster
+    #         exp = exp[extract]
+    #     return exp
+
     def get_expression(self, expression, visualization_level, coarse_cluster_level=None,
                        coarse_cluster= None, smooth=True, smooth_knn=5):
         """Map expression from single cell space to Multiscale PHATE embedding
+        Missing values are ignored when computing the mean.
         ----------
         expression: array, shape=[n_cells]
             Expression vector that you want to map to coarse granularity
@@ -326,10 +368,12 @@ class Multiscale_PHATE(object):
 
         exp = []
         for l in loc:
-            exp.append(np.mean(expression[l]))
+            exp_l = np.array(expression[l])
+            exp_l = exp_l[~np.isnan(exp_l)]
+            exp.append(np.mean(exp_l))
             
         exp = np.array(exp)
-        
+
         if smooth:
             G = graphtools.Graph(self.Xs[visualization_level], knn = smooth_knn,n_jobs=self.n_jobs)
             exp = G.P.toarray()@exp
@@ -340,3 +384,37 @@ class Multiscale_PHATE(object):
             extract = self.NxTs[coarse_cluster_level][unique[1]] == coarse_cluster
             exp = exp[extract]
         return exp
+
+    def get_majority_votes(self, categories, visualization_level):
+        """Map expression from single cell space to Multiscale PHATE embedding
+        ----------
+        expression: array, shape=[n_cells]
+            Expression vector that you want to map to coarse granularity
+        layer: int
+            Coarse granularity
+        Returns
+        -------
+        majority_vote : array, shape=[n_points_aggregated]
+            Majority label in each aggregated cluster.
+        ratio : array, shape=[n_points_aggregated]
+            Ratio of the majority label. Handy for setting alpha transparency.
+        """
+        clust_unique = np.unique(np.array(self.NxTs[visualization_level]))
+        loc = []
+        for c in clust_unique:
+            loc.append(np.where(np.array(self.NxTs[visualization_level]) == c)[0])
+
+        exp = []
+        ratio = []
+        for l in loc:
+            # Get the mode
+            values, counts = np.unique(categories[l], return_counts=True)
+            mode_arg = counts.argmax()
+            mode = values[counts.argmax()]
+            exp.append(mode)
+            ratio.append(counts[mode_arg]/counts.sum())
+
+        exp = np.array(exp)
+        ratio = np.array(ratio)
+
+        return exp, ratio
