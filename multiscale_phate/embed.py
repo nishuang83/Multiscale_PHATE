@@ -140,7 +140,7 @@ def get_zoom_visualization(
         NxTs[zoom_visualization_level], return_index=True, return_counts=True
     )
     extract = NxTs[coarse_cluster_level][unique[1]] == coarse_cluster
-
+    
     subset_X = Xs[zoom_visualization_level]
     embedding = phate.mds.embed_MDS(subset_X[extract], n_jobs=n_jobs, seed=random_state)
 
@@ -210,14 +210,16 @@ def get_clusters_sizes_2(
 
     """
     unique = np.unique(NxT[layer], return_index=True, return_counts=True)
-
-    # expand_X = Xs[layer][scale_down(NxTs[layer])]
-    # subset_X = expand_X[np.unique(NxTs[layer], return_index=True)[1]]
+    
+    # expand_X = X[layer][scale_down(NxT[layer])]
+    # subset_X = expand_X[np.unique(NxT[layer], return_index=True)[1]]
 
     subset_X = X[layer]
 
     if repulse:
         subset_X = repulsion(subset_X.copy())
+        # print("repulse True")
 
     embedding = phate.mds.embed_MDS(subset_X, n_jobs=n_jobs, seed=random_state)
+
     return embedding, clusters_full[unique[1]], unique[2]

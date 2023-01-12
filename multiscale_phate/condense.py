@@ -115,14 +115,19 @@ def condense(X, clusters, scale, epsilon, merge_threshold, n_jobs, random_state=
     """
     NxT = []
     NxT.append(clusters)
+
     NxT.append(clusters)
+
     X_cont = []
+    
 
     N = X.shape[0]
 
-    for c in range(len(np.unique(clusters))):
+    # for c in range(len(np.unique(clusters))):
+    for c in np.unique(clusters):
         loc = np.where(c == clusters)[0]
         X_cont.append(list(loc))
+    # print("X_cont: ", np.shape(X_cont))
     X_1 = X.copy()
     K_list = []
     X_list = []
@@ -194,8 +199,10 @@ def condense(X, clusters, scale, epsilon, merge_threshold, n_jobs, random_state=
 
             del X_list[-1]
             X_list.append(X_1)
-
+            # print("X_list[-1] shape:", X_list[-1].shape)
+               
             del NxT[-1]
             NxT.append(cluster_assignment)
+            # print("unique NxT:", np.shape(np.unique(NxT[-1])))
 
     return NxT, X_list, K_list, merged, P_list
